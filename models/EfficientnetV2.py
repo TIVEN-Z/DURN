@@ -11,9 +11,9 @@ def drop_path(x, drop_prob: float = 0., training: bool = False):
     if drop_prob == 0. or not training:
         return x
     keep_prob = 1 - drop_prob 
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
     random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()  # binarize
+    random_tensor.floor_()
     output = x.div(keep_prob) * random_tensor 
     return output
 
@@ -42,7 +42,7 @@ class ConvBNAct(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if activation_layer is None:
-            activation_layer = nn.SiLU  # alias Swish  (torch>=1.7)
+            activation_layer = nn.SiLU
 
         self.conv = nn.Conv2d(in_channels=in_planes,
                               out_channels=out_planes,
@@ -65,13 +65,13 @@ class ConvBNAct(nn.Module):
 
 class SqueezeExcite(nn.Module):
     def __init__(self,
-                 input_c: int,  # block input channel
-                 expand_c: int,  # block expand channel
+                 input_c: int, 
+                 expand_c: int,
                  se_ratio: float = 0.25):
         super(SqueezeExcite, self).__init__()
         squeeze_c = int(input_c * se_ratio)
         self.conv_reduce = nn.Conv2d(expand_c, squeeze_c, 1)
-        self.act1 = nn.SiLU()  # alias Swish
+        self.act1 = nn.SiLU()
         self.conv_expand = nn.Conv2d(squeeze_c, expand_c, 1)
         self.act2 = nn.Sigmoid()
 
@@ -101,18 +101,16 @@ class MBConv(nn.Module):
 
         self.has_shortcut = (stride == 1 and input_c == out_c)
 
-        activation_layer = nn.SiLU  # alias Swish
+        activation_layer = nn.SiLU
         expanded_c = input_c * expand_ratio
 
         assert expand_ratio != 1
-        # Point-wise expansion
         self.expand_conv = ConvBNAct(input_c,
                                      expanded_c,
                                      kernel_size=1,
                                      norm_layer=norm_layer,
                                      activation_layer=activation_layer)
 
-        # Depth-wise convolution
         self.dwconv = ConvBNAct(expanded_c,
                                 expanded_c,
                                 kernel_size=kernel_size,
@@ -123,7 +121,6 @@ class MBConv(nn.Module):
 
         self.se = SqueezeExcite(input_c, expanded_c, se_ratio) if se_ratio > 0 else nn.Identity()
 
-        # Point-wise linear projection
         self.project_conv = ConvBNAct(expanded_c,
                                       out_planes=out_c,
                                       kernel_size=1,
@@ -169,11 +166,10 @@ class FusedMBConv(nn.Module):
 
         self.has_expansion = expand_ratio != 1
 
-        activation_layer = nn.SiLU  # alias Swish
+        activation_layer = nn.SiLU
         expanded_c = input_c * expand_ratio
 
         if self.has_expansion:
-            # Expansion convolution
             self.expand_conv = ConvBNAct(input_c,
                                          expanded_c,
                                          kernel_size=kernel_size,
@@ -251,7 +247,6 @@ class EfficientNetV2(nn.Module):
                 block_id += 1
         self.blocks = nn.Sequential(*blocks)
 
-        # initial weights
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode="fan_out")
@@ -267,37 +262,37 @@ class EfficientNetV2(nn.Module):
     def forward(self, x):
         if self.stage == 5:
             x0 = self.stem(x)
-            x1 = self.blocks[0:1](x0)  # (1,24,112,112)
-            x2 = self.blocks[2:5](x1)  # (1,48,56,56)
-            x3 = self.blocks[6:9](x2)  # (1,64,28,28)
-            x4 = self.blocks[10:24](x3)  # (1,160,14,14)
-            x5 = self.blocks[25:](x4)  # (1,256,7,7)
+            x1 = self.blocks[0:1](x0)
+            x2 = self.blocks[2:5](x1)
+            x3 = self.blocks[6:9](x2)
+            x4 = self.blocks[10:24](x3)
+            x5 = self.blocks[25:](x4)
             res = [x, x1, x2, x3, x4, x5]
             return res
         if self.stage == 4:
             x0 = self.stem(x)
-            x1 = self.blocks[0:1](x0)  # (1,24,112,112)
-            x2 = self.blocks[2:5](x1)  # (1,48,56,56)
-            x3 = self.blocks[6:9](x2)  # (1,64,28,28)
-            x4 = self.blocks[10:](x3)  # (1,160,14,14)
+            x1 = self.blocks[0:1](x0)
+            x2 = self.blocks[2:5](x1)
+            x3 = self.blocks[6:9](x2)
+            x4 = self.blocks[10:](x3)
             res = [x, x1, x2, x3, x4]
             return res
         if self.stage == 3:
             x0 = self.stem(x)
-            x1 = self.blocks[0:1](x0)  # (1,24,112,112)
-            x2 = self.blocks[2:5](x1)  # (1,48,56,56)
-            x3 = self.blocks[6:](x2)  # (1,64,28,28)
+            x1 = self.blocks[0:1](x0)
+            x2 = self.blocks[2:5](x1)
+            x3 = self.blocks[6:](x2)
             res = [x, x1, x2, x3]
             return res
 
 
 def efficientnetv2_s(stage=5,drop_connect_rate=0.2):
-    model_config = [[2, 3, 1, 1, 24, 24, 0, 0],  # stage 1
-                    [4, 3, 2, 4, 24, 48, 0, 0],  # stage 2
-                    [4, 3, 2, 4, 48, 64, 0, 0],  # stage 3
-                    [6, 3, 2, 4, 64, 128, 1, 0.25],  # stage 4
-                    [9, 3, 1, 6, 128, 160, 1, 0.25],  # stage 4
-                    [15, 3, 2, 6, 160, 256, 1, 0.25]]  # stage 5
+    model_config = [[2, 3, 1, 1, 24, 24, 0, 0],
+                    [4, 3, 2, 4, 24, 48, 0, 0],
+                    [4, 3, 2, 4, 48, 64, 0, 0],
+                    [6, 3, 2, 4, 64, 128, 1, 0.25],
+                    [9, 3, 1, 6, 128, 160, 1, 0.25],
+                    [15, 3, 2, 6, 160, 256, 1, 0.25]] 
     if stage == 5:
         model_config = model_config
     elif stage == 4:

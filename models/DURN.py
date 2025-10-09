@@ -10,7 +10,7 @@ class SegmentationHead(nn.Sequential):
         super().__init__(conv2d, upsampling)
 
 
-class AFFE(nn.Module):  # Scale Enhancement Module
+class AFFE(nn.Module):
     def __init__(self, c_in, c_out, rate=4):
         super(AFFE, self).__init__()
         self.rate = rate
@@ -51,11 +51,11 @@ class AFFE(nn.Module):  # Scale Enhancement Module
         self._initialize_weights()
 
     def forward(self, x):
-        o = self.relu(self.conv(x))  # c=32
-        o1 = o  # c=32
-        o2 = self.relu2(self.conv2(o))  # c=32
-        o3 = self.relu3(self.conv3(o))  # c=32
-        o4 = self.relu4(self.conv4(o))  # c=32
+        o = self.relu(self.conv(x))
+        o1 = o 
+        o2 = self.relu2(self.conv2(o)) 
+        o3 = self.relu3(self.conv3(o)) 
+        o4 = self.relu4(self.conv4(o))
 
         o1_w = self.sigmoid_1(self.conv1_2(self.conv1_1(o1)))
         o2_w = self.sigmoid_2(self.conv2_2(self.conv2_1(o2)))
@@ -120,7 +120,7 @@ class DURN(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder_depth = 5
-        self.encoder_channels = [3, 24, 48, 64, 160, 256]  # [3, 24, 48, 64, 160, 256]
+        self.encoder_channels = [3, 24, 48, 64, 160, 256]
         self.decoder_use_batchnorm = True,
         self.decoder_channels = (256, 128, 64, 32, 16)
         self.decoder_attention_type = None
@@ -129,7 +129,7 @@ class DURN(nn.Module):
 
         self.decoder = UnetPlusPlusDecoderDSS(
             encoder_channels=self.encoder_channels,
-            decoder_channels=self.decoder_channels,  # 256, 128, 64, 32, 16
+            decoder_channels=self.decoder_channels,
             n_blocks=self.encoder_depth,
             use_batchnorm=True,
             center=False,
@@ -142,8 +142,8 @@ class DURN(nn.Module):
 
         self.decoder_u = UnetPlusPlusDecoderDSS(
             encoder_channels=self.encoder_channels,
-            decoder_channels=self.decoder_channels,  # 256, 128, 64, 32, 16
-            n_blocks=self.encoder_depth,  # 5
+            decoder_channels=self.decoder_channels,
+            n_blocks=self.encoder_depth,
             use_batchnorm=self.decoder_use_batchnorm,
             center=False,
             attention_type=self.decoder_attention_type,
@@ -158,7 +158,6 @@ class DURN(nn.Module):
 
     def forward(self, x):
         features = self.encoder(x)
-        # features = self.features_dss(features)
         features = self.features_affe(features)
         decoder_output = self.decoder(*features)
         mean = self.segmentation_head(decoder_output)

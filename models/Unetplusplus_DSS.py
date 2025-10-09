@@ -110,24 +110,18 @@ class UnetPlusPlusDecoder(nn.Module):
                 )
             )
 
-        # remove first skip with same spatial resolution
         encoder_channels = encoder_channels[1:]
-        # reverse channels to start from head of encoder
         encoder_channels = encoder_channels[::-1]
-
-        # computing blocks input and output channels
         head_channels = encoder_channels[0]
         self.in_channels = [head_channels] + list(decoder_channels[:-1])
         self.skip_channels = list(encoder_channels[1:]) + [0]
-        self.out_channels = decoder_channels  # 256, 128, 64, 32, 16
+        self.out_channels = decoder_channels
 
         self.center = nn.Identity()
-
-        # combine decoder keyword arguments
         kwargs = dict(use_batchnorm=use_batchnorm, attention_type=attention_type)
 
         blocks = {}
-        for layer_idx in range(len(self.in_channels) - 1):  # 0 1 2 3
+        for layer_idx in range(len(self.in_channels) - 1):
             for depth_idx in range(layer_idx + 1):
                 if depth_idx == 0:
                     in_ch = self.in_channels[layer_idx]
@@ -142,21 +136,15 @@ class UnetPlusPlusDecoder(nn.Module):
                     blocks[f"x_{depth_idx}_{layer_idx}"] = DecoderBlock(in_ch, skip_ch, out_ch, attention_type="dss")
                 else:
                     blocks[f"x_{depth_idx}_{layer_idx}"] = DecoderBlock(in_ch, skip_ch, out_ch, **kwargs)
-
-                # blocks[f"x_{depth_idx}_{layer_idx}"] = DecoderBlock(in_ch, skip_ch, out_ch, **kwargs)
         blocks[f"x_{0}_{len(self.in_channels) - 1}"] = DecoderBlock(
             self.in_channels[-1], 0, self.out_channels[-1], **kwargs
         )
         self.blocks = nn.ModuleDict(blocks)
-        self.depth = len(self.in_channels) - 1  # 4
+        self.depth = len(self.in_channels) - 1
 
     def forward(self, *features):
-        # features = 3, 24, 48, 64, 160, 256
-        # remove first skip with same spatial resolution
-        features = features[1:]  # 24, 48, 64, 160, 256
-        # reverse channels to start from head of encode
-        features = features[::-1]  # 256, 160, 64, 48, 24
-        # start building dense connections
+        features = features[1:]
+        features = features[::-1]
         dense_x = {}
         for layer_idx in range(len(self.in_channels) - 1):
             for depth_idx in range(self.depth - layer_idx):

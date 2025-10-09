@@ -2,5 +2,5 @@
 DURN: Data Uncertainty-driven Robust Network for mural sketch detection
 
 # Result
-![泛化实验](./images/泛化实验.png)
-![泛化实验](./images/多国壁画比较.png)
+![res](./images/image2.png)
+![res](./images/image1.png)
