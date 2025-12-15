@@ -25,7 +25,6 @@ parser.add_argument('--tmp', help='tmp folder', default='./tmp/')
 parser.add_argument('--dataset', help='root folder of dataset', default='../DATA/MURAL/')
 parser.add_argument('--itersize', default=1, type=int, metavar='IS', help='iter size')
 parser.add_argument('--std_weight', default=1, type=float, help='weight for std loss')
-parser.add_argument('--distribution', default="gs", type=str, help='the output distribution')
 parser.add_argument('--size', default=320, type=int, help='train images size')
 parser.add_argument('--model', default="DURN", help='method name')
 args = parser.parse_args()
@@ -139,3 +138,4 @@ def train(train_loader, model, optimizer, epoch, save_dir):
 
 if __name__ == '__main__':
     main()
+
