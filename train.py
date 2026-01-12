@@ -99,7 +99,6 @@ def train(train_loader, model, optimizer, epoch, save_dir):
     optimizer = step_lr_scheduler(optimizer, epoch)
     # switch to train mode
     model.train()
-    # print(epoch, optimizer.state_dict()['param_groups'][0]['lr'])
     counter = 0
     for i, (image, label) in enumerate(train_loader):
         # measure data loading time
@@ -129,7 +128,7 @@ def train(train_loader, model, optimizer, epoch, save_dir):
             with open(args.tmp + args.model + '/' + 'log.txt', 'a') as f:
                 f.write(info + '\n')
 
-        # save checkpoint
+    # save checkpoint
     save_checkpoint({
         'epoch': epoch,
         'state_dict': model.state_dict(),
@@ -138,4 +137,5 @@ def train(train_loader, model, optimizer, epoch, save_dir):
 
 if __name__ == '__main__':
     main()
+
 
